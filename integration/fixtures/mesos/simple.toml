@@ -1,9 +1,0 @@
-[log]
-logLevel = "DEBUG"
-
-[entryPoints]
-  [entryPoints.http]
-  address = ":8000"
-
-[providers]
-   [providers.mesos]

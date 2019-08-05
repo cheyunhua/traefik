@@ -1,33 +1,36 @@
+[global]
+  checkNewVersion = false
+  sendAnonymousUsage = false
+
 [log]
-logLevel = "DEBUG"
+  level = "DEBUG"
 
 [entryPoints]
-  [entryPoints.http]
-  address = ":8000"
-  [entryPoints.http.transport.lifeCycle]
-    RequestAcceptGraceTimeout = "10s"
 
+  [entryPoints.web]
+    address = ":8000"
+    [entryPoints.web.transport.lifeCycle]
+      requestAcceptGraceTimeout = "10s"
 
   [entryPoints.traefik]
-  address = ":8001"
-[entryPoints.traefik.transport.lifeCycle]
-    RequestAcceptGraceTimeout = "10s"
-
-
-[providers]
-   [providers.file]
-
-[Routers]
-  [Routers.router]
-    Service = "service"
-    Rule = "Path:/service"
-
-[Services]
-  [Services.service]
-    [Services.service.LoadBalancer]
-
-      [[Services.service.LoadBalancer.Servers]]
-        URL = "{{.Server}}"
-        Weight = 1
+    address = ":8001"
+    [entryPoints.traefik.transport.lifeCycle]
+      requestAcceptGraceTimeout = "10s"
 
 [ping]
+
+[providers]
+  [providers.file]
+
+## dynamic configuration ##
+
+[http.routers]
+  [http.routers.router]
+    service = "service"
+    rule = "Path(`/service`)"
+
+[http.services]
+    [http.services.service.loadBalancer]
+      [[http.services.service.loadBalancer.servers]]
+        url = "{{.Server}}"
+

@@ -1,28 +1,16 @@
 ################################################################
-# Global configuration
+#
+# Configuration sample for Traefik v2
+# For Traefik v1: https://github.com/containous/traefik/blob/v1.7/traefik.sample.toml
+#
 ################################################################
 
-# Enable debug mode
-#
-# Optional
-# Default: false
-#
-# debug = true
-
-# Log level
-#
-# Optional
-# Default: "ERROR"
-#
-# logLevel = "DEBUG"
-
-# Entrypoints to be used by frontends that do not specify any entrypoint.
-# Each frontend can specify its own entrypoints.
-#
-# Optional
-# Default: ["http"]
-#
-# defaultEntryPoints = ["http", "https"]
+################################################################
+# Global configuration
+################################################################
+[global]
+  checkNewVersion = true
+  sendAnonymousUsage = true
 
 ################################################################
 # Entrypoints configuration
@@ -33,8 +21,8 @@
 # Optional
 # Default:
 [entryPoints]
-    [entryPoints.http]
-    address = ":80"
+  [entryPoints.web]
+  address = ":80"
 
 ################################################################
 # Traefik logs configuration
@@ -45,7 +33,14 @@
 #
 # Optional
 #
-# [traefikLog]
+[log]
+
+# Log level
+#
+# Optional
+# Default: "ERROR"
+#
+# level = "DEBUG"
 
 # Sets the filepath for the traefik log. If not specified, stdout will be used.
 # Intermediate directories are created if necessary.
@@ -129,7 +124,7 @@
 ################################################################
 
 # Enable Docker configuration backend
-[docker]
+[providers.docker]
 
 # Docker server endpoint. Can be a tcp or a unix socket endpoint.
 #
@@ -138,13 +133,12 @@
 #
 # endpoint = "tcp://10.10.10.10:2375"
 
-# Default domain used.
-# Can be overridden by setting the "traefik.domain" label on a container.
+# Default host rule.
 #
 # Optional
 # Default: ""
 #
-# domain = "docker.localhost"
+# DefaultRule = "Host(`{{ normalize .Name }}.docker.localhost`)"
 
 # Expose containers by default in traefik
 #

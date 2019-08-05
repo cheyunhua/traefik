@@ -1,35 +1,36 @@
 [global]
-debug=true
+  checkNewVersion = false
+  sendAnonymousUsage = false
+
+[log]
+  level = "DEBUG"
 
 [entryPoints]
-  [entryPoints.http]
-  address = ":8000"
+  [entryPoints.web]
+    address = ":8000"
 
 [api]
 
-[providers]
-   [providers.file]
+[providers.file]
 
-[Routers]
-  [Routers.router1]
-    EntryPoints = ["http"]
-    Service = "service1"
-    Rule = "PathPrefix:/whoami"
+## dynamic configuration ##
 
-  [Routers.router2]
-    EntryPoints = ["traefik"]
-    Service = "service2"
-    Rule = "PathPrefix:/whoami"
+[http.routers]
+  [http.routers.router1]
+    entryPoints = ["web"]
+    service = "service1"
+    rule = "PathPrefix(`/whoami`)"
 
-[Services]
-  [Services.service1]
-    [Services.service1.LoadBalancer]
-      [[Services.service1.LoadBalancer.Servers]]
-        URL = "{{ .Server1 }}"
-        Weight = 1
+  [http.routers.router2]
+    entryPoints = ["traefik"]
+    service = "service2"
+    rule = "PathPrefix(`/whoami`)"
 
-  [Services.service2]
-    [Services.service2.LoadBalancer]
-      [[Services.service2.LoadBalancer.Servers]]
-        URL = "{{ .Server2 }}"
-        Weight = 1
+[http.services]
+  [http.services.service1.loadBalancer]
+    [[http.services.service1.loadBalancer.servers]]
+      url = "{{ .Server1 }}"
+
+  [http.services.service2.loadBalancer]
+    [[http.services.service2.loadBalancer.servers]]
+      url = "{{ .Server2 }}"

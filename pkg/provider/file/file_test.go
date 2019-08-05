@@ -1,0 +1,370 @@
+package file
+
+import (
+	"context"
+	"io"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strconv"
+	"testing"
+	"time"
+
+	"github.com/containous/traefik/pkg/config"
+	"github.com/containous/traefik/pkg/safe"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+type ProvideTestCase struct {
+	desc               string
+	directoryPaths     []string
+	filePath           string
+	traefikFilePath    string
+	expectedNumRouter  int
+	expectedNumService int
+	expectedNumTLSConf int
+}
+
+func TestTLSContent(t *testing.T) {
+	tempDir := createTempDir(t, "testdir")
+	defer os.RemoveAll(tempDir)
+
+	fileTLS, err := createTempFile("./fixtures/toml/tls_file.cert", tempDir)
+	require.NoError(t, err)
+
+	fileConfig, err := ioutil.TempFile(tempDir, "temp*.toml")
+	require.NoError(t, err)
+
+	content := `
+[[tls.certificates]]
+  certFile = "` + fileTLS.Name() + `"
+  keyFile = "` + fileTLS.Name() + `"
+`
+
+	_, err = fileConfig.Write([]byte(content))
+	require.NoError(t, err)
+
+	provider := &Provider{}
+	configuration, err := provider.loadFileConfig(fileConfig.Name(), true)
+	require.NoError(t, err)
+
+	require.Equal(t, "CONTENT", configuration.TLS.Certificates[0].Certificate.CertFile.String())
+	require.Equal(t, "CONTENT", configuration.TLS.Certificates[0].Certificate.KeyFile.String())
+}
+
+func TestErrorWhenEmptyConfig(t *testing.T) {
+	provider := &Provider{}
+	configChan := make(chan config.Message)
+	errorChan := make(chan struct{})
+	go func() {
+		err := provider.Provide(configChan, safe.NewPool(context.Background()))
+		assert.Error(t, err)
+		close(errorChan)
+	}()
+
+	timeout := time.After(time.Second)
+	select {
+	case <-configChan:
+		t.Fatal("We should not receive config message")
+	case <-timeout:
+		t.Fatal("timeout while waiting for config")
+	case <-errorChan:
+	}
+}
+
+func TestProvideWithoutWatch(t *testing.T) {
+	for _, test := range getTestCases() {
+		t.Run(test.desc+" without watch", func(t *testing.T) {
+			provider, clean := createProvider(t, test, false)
+			defer clean()
+			configChan := make(chan config.Message)
+
+			provider.DebugLogGeneratedTemplate = true
+
+			go func() {
+				err := provider.Provide(configChan, safe.NewPool(context.Background()))
+				assert.NoError(t, err)
+			}()
+
+			timeout := time.After(time.Second)
+			select {
+			case conf := <-configChan:
+				require.NotNil(t, conf.Configuration.HTTP)
+				assert.Len(t, conf.Configuration.HTTP.Services, test.expectedNumService)
+				assert.Len(t, conf.Configuration.HTTP.Routers, test.expectedNumRouter)
+				require.NotNil(t, conf.Configuration.TLS)
+				assert.Len(t, conf.Configuration.TLS.Certificates, test.expectedNumTLSConf)
+			case <-timeout:
+				t.Errorf("timeout while waiting for config")
+			}
+		})
+	}
+}
+
+func TestProvideWithWatch(t *testing.T) {
+	for _, test := range getTestCases() {
+		t.Run(test.desc+" with watch", func(t *testing.T) {
+			provider, clean := createProvider(t, test, true)
+			defer clean()
+			configChan := make(chan config.Message)
+
+			go func() {
+				err := provider.Provide(configChan, safe.NewPool(context.Background()))
+				assert.NoError(t, err)
+			}()
+
+			timeout := time.After(time.Second)
+			select {
+			case conf := <-configChan:
+				require.NotNil(t, conf.Configuration.HTTP)
+				assert.Len(t, conf.Configuration.HTTP.Services, 0)
+				assert.Len(t, conf.Configuration.HTTP.Routers, 0)
+				require.NotNil(t, conf.Configuration.TLS)
+				assert.Len(t, conf.Configuration.TLS.Certificates, 0)
+			case <-timeout:
+				t.Errorf("timeout while waiting for config")
+			}
+
+			if len(test.filePath) > 0 {
+				err := copyFile(test.filePath, provider.Filename)
+				require.NoError(t, err)
+			}
+
+			if len(test.traefikFilePath) > 0 {
+				err := copyFile(test.traefikFilePath, provider.TraefikFile)
+				require.NoError(t, err)
+			}
+
+			if len(test.directoryPaths) > 0 {
+				for i, filePath := range test.directoryPaths {
+					err := copyFile(filePath, filepath.Join(provider.Directory, strconv.Itoa(i)+filepath.Ext(filePath)))
+					require.NoError(t, err)
+				}
+			}
+
+			timeout = time.After(time.Second * 1)
+			var numUpdates, numServices, numRouters, numTLSConfs int
+			for {
+				select {
+				case conf := <-configChan:
+					numUpdates++
+					numServices = len(conf.Configuration.HTTP.Services)
+					numRouters = len(conf.Configuration.HTTP.Routers)
+					numTLSConfs = len(conf.Configuration.TLS.Certificates)
+					t.Logf("received update #%d: services %d/%d, routers %d/%d, TLS configs %d/%d", numUpdates, numServices, test.expectedNumService, numRouters, test.expectedNumRouter, numTLSConfs, test.expectedNumTLSConf)
+
+					if numServices == test.expectedNumService && numRouters == test.expectedNumRouter && numTLSConfs == test.expectedNumTLSConf {
+						return
+					}
+				case <-timeout:
+					t.Fatal("timeout while waiting for config")
+				}
+			}
+		})
+	}
+}
+
+func getTestCases() []ProvideTestCase {
+	return []ProvideTestCase{
+		{
+			desc:               "simple file",
+			filePath:           "./fixtures/toml/simple_file_01.toml",
+			expectedNumRouter:  3,
+			expectedNumService: 6,
+			expectedNumTLSConf: 5,
+		},
+		{
+			desc:               "simple file yaml",
+			filePath:           "./fixtures/yaml/simple_file_01.yml",
+			expectedNumRouter:  3,
+			expectedNumService: 6,
+			expectedNumTLSConf: 5,
+		},
+		{
+			desc:               "simple file and a traefik file",
+			filePath:           "./fixtures/toml/simple_file_02.toml",
+			traefikFilePath:    "./fixtures/toml/simple_traefik_file_01.toml",
+			expectedNumRouter:  4,
+			expectedNumService: 8,
+			expectedNumTLSConf: 4,
+		},
+		{
+			desc:               "simple file and a traefik file yaml",
+			filePath:           "./fixtures/yaml/simple_file_02.yml",
+			traefikFilePath:    "./fixtures/yaml/simple_traefik_file_01.yml",
+			expectedNumRouter:  4,
+			expectedNumService: 8,
+			expectedNumTLSConf: 4,
+		},
+		{
+			desc:               "simple traefik file",
+			traefikFilePath:    "./fixtures/toml/simple_traefik_file_02.toml",
+			expectedNumRouter:  2,
+			expectedNumService: 3,
+			expectedNumTLSConf: 4,
+		},
+		{
+			desc:               "simple traefik file yaml",
+			traefikFilePath:    "./fixtures/yaml/simple_traefik_file_02.yml",
+			expectedNumRouter:  2,
+			expectedNumService: 3,
+			expectedNumTLSConf: 4,
+		},
+		{
+			desc:              "template file",
+			filePath:          "./fixtures/toml/template_file.toml",
+			expectedNumRouter: 20,
+		},
+		{
+			desc:              "template file yaml",
+			filePath:          "./fixtures/yaml/template_file.yml",
+			expectedNumRouter: 20,
+		},
+		{
+			desc:               "simple traefik file with templating",
+			traefikFilePath:    "./fixtures/toml/simple_traefik_file_with_templating.toml",
+			expectedNumRouter:  2,
+			expectedNumService: 3,
+			expectedNumTLSConf: 4,
+		},
+		{
+			desc: "simple directory",
+			directoryPaths: []string{
+				"./fixtures/toml/dir01_file01.toml",
+				"./fixtures/toml/dir01_file02.toml",
+				"./fixtures/toml/dir01_file03.toml",
+			},
+			expectedNumRouter:  2,
+			expectedNumService: 3,
+			expectedNumTLSConf: 4,
+		},
+		{
+			desc: "simple directory yaml",
+			directoryPaths: []string{
+				"./fixtures/yaml/dir01_file01.yml",
+				"./fixtures/yaml/dir01_file02.yml",
+				"./fixtures/yaml/dir01_file03.yml",
+			},
+			expectedNumRouter:  2,
+			expectedNumService: 3,
+			expectedNumTLSConf: 4,
+		},
+		{
+			desc: "template in directory",
+			directoryPaths: []string{
+				"./fixtures/toml/template_in_directory_file01.toml",
+				"./fixtures/toml/template_in_directory_file02.toml",
+			},
+			expectedNumRouter:  20,
+			expectedNumService: 20,
+		},
+		{
+			desc: "template in directory yaml",
+			directoryPaths: []string{
+				"./fixtures/yaml/template_in_directory_file01.yml",
+				"./fixtures/yaml/template_in_directory_file02.yml",
+			},
+			expectedNumRouter:  20,
+			expectedNumService: 20,
+		},
+	}
+}
+
+func createProvider(t *testing.T, test ProvideTestCase, watch bool) (*Provider, func()) {
+	tempDir := createTempDir(t, "testdir")
+
+	provider := &Provider{}
+	provider.Watch = true
+
+	if len(test.directoryPaths) > 0 {
+		if !watch {
+			for _, filePath := range test.directoryPaths {
+				var err error
+				_, err = createTempFile(filePath, tempDir)
+				require.NoError(t, err)
+			}
+		}
+		provider.Directory = tempDir
+	}
+
+	if len(test.filePath) > 0 {
+
+		var file *os.File
+		if watch {
+			var err error
+			file, err = ioutil.TempFile(tempDir, "temp*"+filepath.Ext(test.filePath))
+			require.NoError(t, err)
+		} else {
+			var err error
+			file, err = createTempFile(test.filePath, tempDir)
+			require.NoError(t, err)
+		}
+
+		provider.Filename = file.Name()
+	}
+
+	if len(test.traefikFilePath) > 0 {
+		var file *os.File
+		if watch {
+			var err error
+			file, err = ioutil.TempFile(tempDir, "temp*"+filepath.Ext(test.traefikFilePath))
+			require.NoError(t, err)
+		} else {
+			var err error
+			file, err = createTempFile(test.traefikFilePath, tempDir)
+			require.NoError(t, err)
+		}
+
+		provider.TraefikFile = file.Name()
+	}
+
+	return provider, func() {
+		os.RemoveAll(tempDir)
+	}
+}
+
+// createTempDir Helper
+func createTempDir(t *testing.T, dir string) string {
+	t.Helper()
+
+	d, err := ioutil.TempDir("", dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return d
+}
+
+func copyFile(srcPath, dstPath string) error {
+	dst, err := os.OpenFile(dstPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
+	if err != nil {
+		return err
+	}
+	defer dst.Close()
+
+	src, err := os.Open(srcPath)
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+
+	_, err = io.Copy(dst, src)
+	return err
+}
+
+func createTempFile(srcPath, tempDir string) (*os.File, error) {
+	file, err := ioutil.TempFile(tempDir, "temp*"+filepath.Ext(srcPath))
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	src, err := os.Open(srcPath)
+	if err != nil {
+		return nil, err
+	}
+	defer src.Close()
+
+	_, err = io.Copy(file, src)
+	return file, err
+}

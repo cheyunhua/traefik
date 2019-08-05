@@ -1,29 +1,31 @@
 [global]
-debug=true
+  checkNewVersion = false
+  sendAnonymousUsage = false
+
+[log]
+  level = "DEBUG"
 
 [entryPoints]
-  [entryPoints.http]
-     address = ":8000"
+  [entryPoints.web]
+    address = ":8000"
 
 [api]
 
 [providers]
-   [providers.docker]
-      endpoint = "unix:///var/run/docker.sock"
-      watch = true
-      exposedByDefault = false
+  [providers.docker]
+    watch = true
+    exposedByDefault = false
 
-   [providers.file]
+  [providers.file]
 
-[Routers]
-  [Routers.router-1]
-    Service = "service-test"
-    Rule = "PathPrefix:/file"
+## dynamic configuration ##
 
-[Services]
-  [Services.service-test]
-    [Services.service-test.LoadBalancer]
+[http.routers]
+  [http.routers.router-1]
+    service = "service-test"
+    rule = "PathPrefix(`/file`)"
 
-      [[Services.service-test.LoadBalancer.Servers]]
-        URL = "http://{{ .IP }}"
-        Weight = 1
+[http.services]
+  [http.services.service-test.loadBalancer]
+    [[http.services.service-test.loadBalancer.servers]]
+      url = "http://{{ .IP }}"

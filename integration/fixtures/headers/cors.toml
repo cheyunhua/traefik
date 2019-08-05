@@ -1,0 +1,32 @@
+[global]
+  checkNewVersion = false
+  sendAnonymousUsage = false
+
+[log]
+  level = "DEBUG"
+
+[entryPoints]
+  [entryPoints.web]
+    address = ":8000"
+
+[providers]
+  [providers.file]
+
+## dynamic configuration ##
+
+[http.routers]
+  [http.routers.router1]
+    rule = "Host(`test.localhost`)"
+    service = "service1"
+
+[http.middlewares]
+  [http.middlewares.cors.headers]
+    accessControlAllowMethods= ["GET", "OPTIONS", "PUT"]
+    accessControlAllowOrigin = "origin-list-or-null"
+    accessControlMaxAge = 100
+    addVaryHeader = true
+
+[http.services]
+  [http.services.service1.loadBalancer]
+    [[http.services.service1.loadBalancer.servers]]
+      url = "http://172.17.0.2:80"

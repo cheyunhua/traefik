@@ -1,36 +1,43 @@
-logLevel = "DEBUG"
+[global]
+  checkNewVersion = false
+  sendAnonymousUsage = false
+
+[log]
+  level = "DEBUG"
 
 [entryPoints]
-  [entryPoints.https]
-  address = ":4443"
-    [entryPoints.https.tls]
-     [entryPoints.https.tls.defaultCertificate]
-     certFile = "fixtures/https/wildcard.snitest.com.cert"
-     keyFile = "fixtures/https/wildcard.snitest.com.key"
+  [entryPoints.web-secure]
+    address = ":4443"
 
 [api]
 
 [providers]
-   [providers.file]
+  [providers.file]
 
-[Routers]
-  [Routers.router1]
-    Service = "service1"
-    rule = "HostRegexp: {subdomain:[a-z1-9-]+}.snitest.com"
-  [Routers.router2]
-    Service = "service1"
-    rule = "HostRegexp: {subdomain:[a-z1-9-]+}.www.snitest.com"
+## dynamic configuration ##
 
-[Services]
-  [Services.service1]
-    [Services.service1.LoadBalancer]
+[http.routers]
+  [http.routers.router1]
+    rule = "HostRegexp(`{subdomain:[a-z1-9-]+}.snitest.com`)"
+    service = "service1"
+    [http.routers.router1.tls]
 
-      [[Services.service1.LoadBalancer.Servers]]
-        URL = "http://127.0.0.1:9010"
-        Weight = 1
+  [http.routers.router2]
+    rule = "HostRegexp(`{subdomain:[a-z1-9-]+}.www.snitest.com`)"
+    service = "service1"
+    [http.routers.router2.tls]
 
-[[tls]]
-  entryPoints = ["https"]
-  [tls.certificate]
-    certFile = "fixtures/https/uppercase_wildcard.www.snitest.com.cert"
-    keyFile = "fixtures/https/uppercase_wildcard.www.snitest.com.key"
+[http.services]
+  [http.services.service1]
+    [http.services.service1.loadBalancer]
+      [[http.services.service1.loadBalancer.servers]]
+        url = "http://127.0.0.1:9010"
+
+[[tls.certificates]]
+  certFile = "fixtures/https/uppercase_wildcard.www.snitest.com.cert"
+  keyFile = "fixtures/https/uppercase_wildcard.www.snitest.com.key"
+
+[tls.stores]
+  [tls.stores.default.defaultCertificate]
+    certFile = "fixtures/https/wildcard.snitest.com.cert"
+    keyFile = "fixtures/https/wildcard.snitest.com.key"

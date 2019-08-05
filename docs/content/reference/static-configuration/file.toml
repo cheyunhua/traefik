@@ -1,0 +1,232 @@
+[global]
+  checkNewVersion = true
+  sendAnonymousUsage = true
+
+[serversTransport]
+  insecureSkipVerify = true
+  rootCAs = ["foobar", "foobar"]
+  maxIdleConnsPerHost = 42
+  [serversTransport.forwardingTimeouts]
+    dialTimeout = 42
+    responseHeaderTimeout = 42
+    idleConnTimeout = 42
+
+[entryPoints]
+  [entryPoints.EntryPoint0]
+    address = "foobar"
+    [entryPoints.EntryPoint0.transport]
+      [entryPoints.EntryPoint0.transport.lifeCycle]
+        requestAcceptGraceTimeout = 42
+        graceTimeOut = 42
+      [entryPoints.EntryPoint0.transport.respondingTimeouts]
+        readTimeout = 42
+        writeTimeout = 42
+        idleTimeout = 42
+    [entryPoints.EntryPoint0.proxyProtocol]
+      insecure = true
+      trustedIPs = ["foobar", "foobar"]
+    [entryPoints.EntryPoint0.forwardedHeaders]
+      insecure = true
+      trustedIPs = ["foobar", "foobar"]
+
+[providers]
+  providersThrottleDuration = 42
+  [providers.docker]
+    constraints = "foobar"
+    watch = true
+    endpoint = "foobar"
+    defaultRule = "foobar"
+    exposedByDefault = true
+    useBindPortIP = true
+    swarmMode = true
+    network = "foobar"
+    swarmModeRefreshSeconds = 42
+    [providers.docker.tls]
+      ca = "foobar"
+      caOptional = true
+      cert = "foobar"
+      key = "foobar"
+      insecureSkipVerify = true
+  [providers.file]
+    directory = "foobar"
+    watch = true
+    filename = "foobar"
+    debugLogGeneratedTemplate = true
+    traefikFile = "foobar"
+  [providers.marathon]
+    constraints = "foobar"
+    trace = true
+    watch = true
+    endpoint = "foobar"
+    defaultRule = "foobar"
+    exposedByDefault = true
+    dcosToken = "foobar"
+    dialerTimeout = 42
+    responseHeaderTimeout = 42
+    tlsHandshakeTimeout = 42
+    keepAlive = 42
+    forceTaskHostname = true
+    respectReadinessChecks = true
+    [providers.marathon.tls]
+      ca = "foobar"
+      caOptional = true
+      cert = "foobar"
+      key = "foobar"
+      insecureSkipVerify = true
+    [providers.marathon.basic]
+      httpBasicAuthUser = "foobar"
+      httpBasicPassword = "foobar"
+  [providers.kubernetes]
+    endpoint = "foobar"
+    token = "foobar"
+    certAuthFilePath = "foobar"
+    disablePassHostHeaders = true
+    namespaces = ["foobar", "foobar"]
+    labelSelector = "foobar"
+    ingressClass = "foobar"
+    [providers.kubernetes.ingressEndpoint]
+      ip = "foobar"
+      hostname = "foobar"
+      publishedService = "foobar"
+  [providers.kubernetesCRD]
+    endpoint = "foobar"
+    token = "foobar"
+    certAuthFilePath = "foobar"
+    disablePassHostHeaders = true
+    namespaces = ["foobar", "foobar"]
+    labelSelector = "foobar"
+    ingressClass = "foobar"
+  [providers.rest]
+    entryPoint = "foobar"
+  [providers.rancher]
+    constraints = "foobar"
+    watch = true
+    defaultRule = "foobar"
+    exposedByDefault = true
+    enableServiceHealthFilter = true
+    refreshSeconds = 42
+    intervalPoll = true
+    prefix = "foobar"
+
+[api]
+  entryPoint = "foobar"
+  dashboard = true
+  middlewares = ["foobar", "foobar"]
+  [api.statistics]
+    recentErrors = 42
+
+[metrics]
+  [metrics.prometheus]
+    buckets = [42.0, 42.0]
+    entryPoint = "foobar"
+    middlewares = ["foobar", "foobar"]
+  [metrics.dataDog]
+    address = "foobar"
+    pushInterval = "10s"
+  [metrics.statsD]
+    address = "foobar"
+    pushInterval = "10s"
+  [metrics.influxDB]
+    address = "foobar"
+    protocol = "foobar"
+    pushInterval = "10s"
+    database = "foobar"
+    retentionPolicy = "foobar"
+    username = "foobar"
+    password = "foobar"
+
+[ping]
+  entryPoint = "foobar"
+  middlewares = ["foobar", "foobar"]
+
+[log]
+  level = "foobar"
+  filePath = "foobar"
+  format = "foobar"
+
+[accessLog]
+  filePath = "foobar"
+  format = "foobar"
+  bufferingSize = 42
+  [accessLog.filters]
+    statusCodes = ["foobar", "foobar"]
+    retryAttempts = true
+    minDuration = 42
+  [accessLog.fields]
+    defaultMode = "foobar"
+    [accessLog.fields.names]
+      name0 = "foobar"
+      name1 = "foobar"
+    [accessLog.fields.headers]
+      defaultMode = "foobar"
+      [accessLog.fields.headers.names]
+        name0 = "foobar"
+        name1 = "foobar"
+
+[tracing]
+  serviceName = "foobar"
+  spanNameLimit = 42
+  [tracing.jaeger]
+    samplingServerURL = "foobar"
+    samplingType = "foobar"
+    samplingParam = 42.0
+    localAgentHostPort = "foobar"
+    gen128Bit = true
+    propagation = "foobar"
+    traceContextHeaderName = "foobar"
+  [tracing.zipkin]
+    httpEndpoint = "foobar"
+    sameSpan = true
+    id128Bit = true
+    debug = true
+    sampleRate = 42.0
+  [tracing.dataDog]
+    localAgentHostPort = "foobar"
+    globalTag = "foobar"
+    debug = true
+    prioritySampling = true
+    traceIDHeaderName = "foobar"
+    parentIDHeaderName = "foobar"
+    samplingPriorityHeaderName = "foobar"
+    bagagePrefixHeaderName = "foobar"
+  [tracing.instana]
+    localAgentHost = "foobar"
+    localAgentPort = 42
+    logLevel = "foobar"
+  [tracing.haystack]
+    localAgentHost = "foobar"
+    localAgentPort = 42
+    globalTag = "foobar"
+    traceIDHeaderName = "foobar"
+    parentIDHeaderName = "foobar"
+    spanIDHeaderName = "foobar"
+
+[hostResolver]
+  cnameFlattening = true
+  resolvConfig = "foobar"
+  resolvDepth = 42
+
+[acme]
+  email = "foobar"
+  acmeLogging = true
+  caServer = "foobar"
+  storage = "foobar"
+  entryPoint = "foobar"
+  keyType = "foobar"
+  onHostRule = true
+  [acme.dnsChallenge]
+    provider = "foobar"
+    delayBeforeCheck = 42
+    resolvers = ["foobar", "foobar"]
+    disablePropagationCheck = true
+  [acme.httpChallenge]
+    entryPoint = "foobar"
+  [acme.tlsChallenge]
+
+  [[acme.domains]]
+    main = "foobar"
+    sans = ["foobar", "foobar"]
+
+  [[acme.domains]]
+    main = "foobar"
+    sans = ["foobar", "foobar"]

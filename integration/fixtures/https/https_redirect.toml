@@ -1,105 +1,174 @@
-[log]
-logLevel = "DEBUG"
+[global]
+  checkNewVersion = false
+  sendAnonymousUsage = false
 
+[log]
+  level = "DEBUG"
 
 [entryPoints]
-  [entryPoints.http]
-  address = ":8888"
+  [entryPoints.web]
+    address = ":8888"
 
-  [entryPoints.http.redirect]
-  entryPoint = "https"
-
-  [entryPoints.https]
-  address = ":8443"
-    [entryPoints.https.tls]
+  [entryPoints.web-secure]
+    address = ":8443"
 
 [api]
 
 [providers]
-   [providers.file]
+  [providers.file]
 
-[Routers]
-  [Routers.router1]
-    Service = "service1"
-    Middlewares = ["redirect-https"]
-    Rule = "Host: example.com"
+## dynamic configuration ##
 
-  [Routers.router2]
-    Service = "service1"
-    Middlewares = ["redirect-https", "api-slash-strip"]
-    Rule = "Host: example2.com"
+[http.routers]
+  [http.routers.router1]
+    entryPoints = [ "web" ]
+    rule = "Host(`example.com`)"
+    middlewares = ["redirect-https"]
+    service = "service1"
 
-  [Routers.router3]
-    Service = "service1"
-    Middlewares = ["redirect-https", "foo-add-prefix"]
-    Rule = "Host: test.com"
+  [http.routers.router1TLS]
+    entryPoints = [ "web-secure" ]
+    rule = "Host(`example.com`)"
+    service = "service1"
+    [http.routers.router1TLS.tls]
 
-  [Routers.router4]
-    Service = "service1"
-    Middlewares = ["redirect-https", "foo-slash-add-prefix"]
-    Rule = "Host: test2.com"
+  [http.routers.router2]
+    entryPoints = [ "web" ]
+    rule = "Host(`example2.com`)"
+    middlewares = ["redirect-https", "api-slash-strip"]
+    service = "service1"
 
-  [Routers.router5]
-    Service = "service1"
-    Middlewares = ["redirect-https", "id-strip-regex-prefix"]
-    Rule = "Host: foo.com"
+  [http.routers.router2TLS]
+    entryPoints = [ "web-secure" ]
+    rule = "Host(`example2.com`)"
+    service = "service1"
+    [http.routers.router2TLS.tls]
 
-  [Routers.router6]
-    Service = "service1"
-    Middlewares = ["redirect-https", "id-slash-strip-regex-prefix"]
-    Rule = "Host: foo2.com"
+  [http.routers.router3]
+    entryPoints = [ "web" ]
+    rule = "Host(`test.com`)"
+    middlewares = ["redirect-https", "foo-add-prefix"]
+    service = "service1"
 
-  [Routers.router7]
-    Service = "service1"
-    Middlewares = ["redirect-https", "api-regex-replace"]
-    Rule = "Host: bar.com"
+  [http.routers.router3TLS]
+    entryPoints = [ "web-secure" ]
+    rule = "Host(`test.com`)"
+    service = "service1"
+    [http.routers.router3TLS.tls]
 
-  [Routers.router8]
-    Service = "service1"
-    Middlewares = ["redirect-https", "api-slash-regex-replace"]
-    Rule = "Host: bar2.com"
+  [http.routers.router4]
+    entryPoints = [ "web" ]
+    rule = "Host(`test2.com`)"
+    middlewares = ["redirect-https", "foo-slash-add-prefix"]
+    service = "service1"
 
-  [Routers.router9]
-    Service = "service1"
-    Middlewares = ["redirect-https", "api-replace-path"]
-    Rule = "Host: pow.com"
+  [http.routers.router4TLS]
+    entryPoints = [ "web-secure" ]
+    rule = "Host(`test2.com`)"
+    service = "service1"
+    [http.routers.router4TLS.tls]
 
-  [Routers.router10]
-    Service = "service1"
-    Middlewares = ["redirect-https", "api-slash-replace-path"]
-    Rule = "Host: pow2.com"
+  [http.routers.router5]
+    entryPoints = [ "web" ]
+    rule = "Host(`foo.com`)"
+    middlewares = ["redirect-https", "id-strip-regex-prefix"]
+    service = "service1"
 
-[Middlewares]
-  [Middlewares.api-strip.StripPrefix]
-     prefixes = ["/api"]
-  [Middlewares.api-slash-strip.StripPrefix]
-     prefixes = ["/api/"]
-  [Middlewares.foo-add-prefix.AddPrefix]
-     prefix = "/foo"
-  [Middlewares.foo-slash-add-prefix.AddPrefix]
-     prefix = "/foo/"
-  [Middlewares.id-strip-regex-prefix.StripPrefixRegex]
-     regex = ["/{id:[a-z]+}"]
-  [Middlewares.id-slash-strip-regex-prefix.StripPrefixRegex]
-     regex = ["/{id:[a-z]+}/"]
-  [Middlewares.api-regex-replace.ReplacePathRegex]
-     regex = "/api"
-     replacement = "/"
-  [Middlewares.api-slash-regex-replace.ReplacePathRegex]
-     regex = "/api/"
-     replacement = "/"
-  [Middlewares.api-replace-path.ReplacePath]
-     path = "/api"
-  [Middlewares.api-slash-replace-path.ReplacePath]
-     path = "/api/"
-  [Middlewares.redirect-https.redirect]
-     regex = "^(?:https?://)?([\\w\\._-]+)(?::\\d+)?(.*)$"
-     replacement = "https://${1}:8443${2}"
+  [http.routers.router5TLS]
+    entryPoints = [ "web-secure" ]
+    rule = "Host(`foo.com`)"
+    service = "service1"
+    [http.routers.router5TLS.tls]
 
-[Services]
-  [Services.service1]
-    [Services.service1.LoadBalancer]
+  [http.routers.router6]
+    entryPoints = [ "web" ]
+    rule = "Host(`foo2.com`)"
+    middlewares = ["redirect-https", "id-slash-strip-regex-prefix"]
+    service = "service1"
 
-      [[Services.service1.LoadBalancer.Servers]]
-        URL = "http://127.0.0.1:80"
-        Weight = 1
+  [http.routers.router6TLS]
+    entryPoints = [ "web-secure" ]
+    rule = "Host(`foo2.com`)"
+    service = "service1"
+    [http.routers.router6TLS.tls]
+
+  [http.routers.router7]
+    entryPoints = [ "web" ]
+    rule = "Host(`bar.com`)"
+    middlewares = ["redirect-https", "api-regex-replace"]
+    service = "service1"
+
+  [http.routers.router7TLS]
+    entryPoints = [ "web-secure" ]
+    rule = "Host(`bar.com`)"
+    service = "service1"
+    [http.routers.router7TLS.tls]
+
+  [http.routers.router8]
+    entryPoints = [ "web" ]
+    rule = "Host(`bar2.com`)"
+    middlewares = ["redirect-https", "api-slash-regex-replace"]
+    service = "service1"
+
+  [http.routers.router8TLS]
+    entryPoints = [ "web-secure" ]
+    rule = "Host(`bar2.com`)"
+    service = "service1"
+    [http.routers.router8TLS.tls]
+
+  [http.routers.router9]
+    entryPoints = [ "web" ]
+    rule = "Host(`pow.com`)"
+    middlewares = ["redirect-https", "api-replace-path"]
+    service = "service1"
+
+  [http.routers.router9TLS]
+    entryPoints = [ "web-secure" ]
+    rule = "Host(`pow.com`)"
+    service = "service1"
+    [http.routers.router9TLS.tls]
+
+  [http.routers.router10]
+    entryPoints = [ "web" ]
+    rule = "Host(`pow2.com`)"
+    middlewares = ["redirect-https", "api-slash-replace-path"]
+    service = "service1"
+
+  [http.routers.router10TLS]
+    entryPoints = [ "web-secure" ]
+    rule = "Host(`pow2.com`)"
+    service = "service1"
+    [http.routers.router10TLS.tls]
+
+[http.middlewares]
+  [http.middlewares.api-strip.stripPrefix]
+    prefixes = ["/api"]
+  [http.middlewares.api-slash-strip.stripPrefix]
+    prefixes = ["/api/"]
+  [http.middlewares.foo-add-prefix.addPrefix]
+    prefix = "/foo"
+  [http.middlewares.foo-slash-add-prefix.addPrefix]
+    prefix = "/foo/"
+  [http.middlewares.id-strip-regex-prefix.stripPrefixRegex]
+    regex = ["/{id:[a-z]+}"]
+  [http.middlewares.id-slash-strip-regex-prefix.stripPrefixRegex]
+    regex = ["/{id:[a-z]+}/"]
+  [http.middlewares.api-regex-replace.replacePathRegex]
+    regex = "/api"
+    replacement = "/"
+  [http.middlewares.api-slash-regex-replace.replacePathRegex]
+    regex = "/api/"
+    replacement = "/"
+  [http.middlewares.api-replace-path.replacePath]
+    path = "/api"
+  [http.middlewares.api-slash-replace-path.replacePath]
+    path = "/api/"
+  [http.middlewares.redirect-https.redirectScheme]
+    scheme = "https"
+    port = "8443"
+
+[http.services]
+  [http.services.service1]
+    [http.services.service1.loadBalancer]
+      [[http.services.service1.loadBalancer.servers]]
+        url = "http://127.0.0.1:80"

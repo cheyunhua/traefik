@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/containous/traefik/config"
 	"github.com/containous/traefik/integration/try"
+	"github.com/containous/traefik/pkg/config"
 	"github.com/go-check/check"
 	checker "github.com/vdemeester/shakers"
 )
@@ -32,13 +32,13 @@ func (s *RestSuite) TestSimpleConfiguration(c *check.C) {
 	err = try.GetRequest("http://127.0.0.1:8000/", 1000*time.Millisecond, try.StatusCodeIs(http.StatusNotFound))
 	c.Assert(err, checker.IsNil)
 
-	config := config.Configuration{
+	config := config.HTTPConfiguration{
 		Routers: map[string]*config.Router{
 			"router1": {
-				EntryPoints: []string{"http"},
+				EntryPoints: []string{"web"},
 				Middlewares: []string{},
 				Service:     "service1",
-				Rule:        "PathPrefix:/",
+				Rule:        "PathPrefix(`/`)",
 			},
 		},
 		Services: map[string]*config.Service{
@@ -46,8 +46,7 @@ func (s *RestSuite) TestSimpleConfiguration(c *check.C) {
 				LoadBalancer: &config.LoadBalancerService{
 					Servers: []config.Server{
 						{
-							URL:    "http://" + s.composeProject.Container(c, "whoami1").NetworkSettings.IPAddress + ":80",
-							Weight: 1,
+							URL: "http://" + s.composeProject.Container(c, "whoami1").NetworkSettings.IPAddress + ":80",
 						},
 					},
 				},
@@ -65,7 +64,7 @@ func (s *RestSuite) TestSimpleConfiguration(c *check.C) {
 	c.Assert(err, checker.IsNil)
 	c.Assert(response.StatusCode, checker.Equals, http.StatusOK)
 
-	err = try.GetRequest("http://127.0.0.1:8080/api/providers/rest/routers", 1000*time.Millisecond, try.BodyContains("PathPrefix:/"))
+	err = try.GetRequest("http://127.0.0.1:8080/api/rawdata", 1000*time.Millisecond, try.BodyContains("PathPrefix(`/`)"))
 	c.Assert(err, checker.IsNil)
 
 	err = try.GetRequest("http://127.0.0.1:8000/", 1000*time.Millisecond, try.StatusCodeIs(http.StatusOK))

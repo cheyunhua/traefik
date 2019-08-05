@@ -1,14 +1,16 @@
-[log]
-logLevel = "DEBUG"
+[global]
+  checkNewVersion = false
+  sendAnonymousUsage = false
 
+[log]
+  level = "DEBUG"
 
 [serversTransport.forwardingTimeouts]
   dialTimeout = "300ms"
   responseHeaderTimeout = "300ms"
 
-
 [entryPoints]
-  [entryPoints.http]
+  [entryPoints.web]
     address = ":8000"
 
 [accessLog]
@@ -16,28 +18,27 @@ logLevel = "DEBUG"
 
 [api]
 
-
 [providers]
-   [providers.file]
+  [providers.file]
 
-[Routers]
-  [Routers.router1]
-    Service = "service1"
-    Rule = "Path:/dialTimeout"
+## dynamic configuration ##
 
-  [Routers.router2]
-    Service = "service2"
-    Rule = "Path:/responseHeaderTimeout"
+[http.routers]
+  [http.routers.router1]
+    service = "service1"
+    rule = "Path(`/dialTimeout`)"
 
-[Services]
-  [Services.service1]
-    [Services.service1.LoadBalancer]
-      [[Services.service1.LoadBalancer.Servers]]
-        URL = "http://50.255.255.1"
-        Weight = 1
+  [http.routers.router2]
+    service = "service2"
+    rule = "Path(`/responseHeaderTimeout`)"
 
-  [Services.service2]
-    [Services.service2.LoadBalancer]
-      [[Services.service2.LoadBalancer.Servers]]
-        URL = "http://{{.TimeoutEndpoint}}:9000"
-        Weight = 1
+[http.services]
+  [http.services.service1]
+    [http.services.service1.loadBalancer]
+      [[http.services.service1.loadBalancer.servers]]
+        url = "http://50.255.255.1"
+
+  [http.services.service2]
+    [http.services.service2.loadBalancer]
+      [[http.services.service2.loadBalancer.servers]]
+        url = "http://{{.TimeoutEndpoint}}:9000"

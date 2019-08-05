@@ -1,12 +1,9 @@
 #!/usr/bin/env bash
 
-source "$(dirname "$BASH_SOURCE")/.validate"
+SCRIPT_DIR="$( cd "$( dirname "${0}" )" && pwd -P)"
+files=()
+while IFS='' read -r line; do files+=("$line"); done < <(git ls-files "${SCRIPT_DIR}"/../'docs/*.md' "${SCRIPT_DIR}"/../*.md)
 
-IFS=$'\n'
-src=( $(validate_diff --diff-filter=ACMR --name-only -- '*.go' | grep -v '^vendor/\|autogen' || true) )
-docs=( $(validate_diff --diff-filter=ACMR --name-only -- 'docs/*.md') )
-unset IFS
-files=("${src[@]}" "${docs[@]}")
 
 errors=()
 for f in "${files[@]}"; do

@@ -1,21 +1,21 @@
+[global]
+  checkNewVersion = false
+  sendAnonymousUsage = false
+
 [log]
-logLevel = "DEBUG"
-
-
+  level = "DEBUG"
 
 [entryPoints]
-  [entryPoints.http]
-  address = "{{ .PortHTTP }}"
-  [entryPoints.https]
-  address = "{{ .PortHTTPS }}"
-    [entryPoints.https.tls]
+  [entryPoints.web]
+    address = "{{ .PortHTTP }}"
+  [entryPoints.web-secure]
+    address = "{{ .PortHTTPS }}"
 
 [acme]
   email = "test@traefik.io"
   storage = "/tmp/acme.json"
-  entryPoint = "https"
+  # entryPoint = "https"
   acmeLogging = true
-  onDemand = {{ .Acme.OnDemand }}
   onHostRule = {{ .Acme.OnHostRule }}
   keyType = "{{ .Acme.KeyType }}"
   caServer = "{{ .Acme.CAServer }}"
@@ -40,16 +40,18 @@ logLevel = "DEBUG"
 [api]
 
 [providers]
-   [providers.file]
+  [providers.file]
 
-[services]
-  [services.test.loadbalancer]
-    [[services.test.loadbalancer.servers]]
-    url = "http://127.0.0.1:9010"
-    weight = 1
+## dynamic configuration ##
 
-[routers]
-  [routers.test]
-  service = "test"
-  rule = "Host:traefik.acme.wtf"
-  entryPoints = ["https"]
+[http.services]
+  [http.services.test.loadBalancer]
+    [[http.services.test.loadBalancer.servers]]
+      url = "http://127.0.0.1:9010"
+
+[http.routers]
+  [http.routers.test]
+    entryPoints = ["web-secure"]
+    rule = "Host(`traefik.acme.wtf`)"
+    service = "test"
+    [http.routers.test.tls]

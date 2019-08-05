@@ -1,26 +1,31 @@
+[global]
+  checkNewVersion = false
+  sendAnonymousUsage = false
+
 [log]
-logLevel = "DEBUG"
+  level = "DEBUG"
 
 [entryPoints]
-  [entryPoints.http]
+  [entryPoints.web]
     address = ":8000"
-    [entryPoints.http.proxyProtocol]
+    [entryPoints.web.proxyProtocol]
       trustedIPs = ["{{.HaproxyIP}}"]
 
 [api]
 
 [providers]
-   [providers.file]
+  [providers.file]
 
-[Routers]
-  [Routers.router1]
-    Service = "service1"
-    Rule = "Path:/whoami"
+## dynamic configuration ##
 
-[Services]
-  [Services.service1]
-    [Services.service1.LoadBalancer]
+[http.routers]
+  [http.routers.router1]
+    service = "service1"
+    rule = "Path(`/whoami`)"
 
-      [[Services.service1.LoadBalancer.Servers]]
-        URL = "http://{{.WhoamiIP}}"
-        Weight = 1
+[http.services]
+  [http.services.service1]
+    [http.services.service1.loadBalancer]
+
+      [[http.services.service1.loadBalancer.servers]]
+        url = "http://{{.WhoamiIP}}"

@@ -1,45 +1,36 @@
-################################################################
-# Global configuration
-################################################################
-[accessLog]
-filePath = "access.log"
+[global]
+  checkNewVersion = false
+  sendAnonymousUsage = false
 
 [log]
-filePath = "traefik.log"
-logLevel = "ERROR"
+  filePath = "traefik.log"
+  level = "ERROR"
+
+[accessLog]
+  filePath = "access.log"
 
 [entryPoints]
-  [entryPoints.http]
-  address = ":8000"
+  [entryPoints.web]
+    address = ":8000"
   [entryPoints.api]
-  address = ":7888"
+    address = ":7888"
 
-checkNewVersion = false
-
-################################################################
-# Api configuration backend
-################################################################
 [api]
-entryPoint = "api"
+  entryPoint = "api"
 
-################################################################
-# File configuration backend
-################################################################
 [providers]
-   [providers.file]
+  [providers.file]
 
-################################################################
-# rules
-################################################################
-[Routers]
-  [Routers.router1]
+## dynamic configuration ##
+
+[http.routers]
+  [http.routers.router1]
     Service = "service1"
-    Rule = "Path: /test1"
+    rule = "Path(`/test1`)"
 
-[Services]
-  [Services.service1]
-    [Services.service1.LoadBalancer]
+[http.services]
+  [http.services.service1]
+    [http.services.service1.loadBalancer]
 
-      [[Services.service1.LoadBalancer.Servers]]
-        URL = "http://127.0.0.1:8081"
-        Weight = 1
+      [[http.services.service1.loadBalancer.servers]]
+        url = "http://127.0.0.1:8081"
